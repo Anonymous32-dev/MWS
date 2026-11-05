@@ -1,0 +1,7 @@
+tokens.json
+config.json
+.env
+__pycache__/
+*.pyc
+.cache/
+.local/
