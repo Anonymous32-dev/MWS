@@ -1,0 +1,722 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>RYUX Studio</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <style>
+        :root {
+            --macos-accent: #007aff;
+            --macos-window-bg: rgba(30, 30, 32, 0.78);
+            --macos-border: rgba(255, 255, 255, 0.12);
+            --macos-text: #f5f5f7;
+        }
+
+        * {
+            box-sizing: border-box;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+
+        body {
+            background: #000;
+            font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Helvetica Neue", sans-serif;
+            color: var(--macos-text);
+            overflow: hidden;
+            height: 100vh;
+            width: 100vw;
+        }
+
+        .desktop-wallpaper {
+            position: fixed;
+            inset: 0;
+            background: 
+                radial-gradient(ellipse 80% 60% at 50% 0%, rgba(120, 60, 220, 0.35) 0%, transparent 70%),
+                radial-gradient(ellipse 60% 50% at 80% 70%, rgba(0, 122, 255, 0.3) 0%, transparent 60%),
+                linear-gradient(180deg, #0d0f18 0%, #05060a 100%);
+            z-index: 0;
+        }
+
+        .macos-glass {
+            background: var(--macos-window-bg);
+            backdrop-filter: blur(45px) saturate(190%);
+            -webkit-backdrop-filter: blur(45px) saturate(190%);
+            border: 1px solid var(--macos-border);
+            box-shadow: 0 30px 90px rgba(0, 0, 0, 0.65);
+        }
+
+        .macos-menubar {
+            background: rgba(20, 20, 22, 0.65);
+            backdrop-filter: blur(30px);
+            border-bottom: 0.5px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .traffic-btn {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 8px;
+            cursor: pointer;
+        }
+        .traffic-close { background-color: #ff5f57; border: 0.5px solid #e0443e; }
+        .traffic-min { background-color: #febc2e; border: 0.5px solid #d89e24; }
+        .traffic-max { background-color: #28c840; border: 0.5px solid #1aab29; }
+
+        .macos-switch {
+            position: relative;
+            display: inline-block;
+            width: 38px;
+            height: 22px;
+            flex-shrink: 0;
+        }
+        .macos-switch input { opacity: 0; width: 0; height: 0; }
+        .macos-slider {
+            position: absolute;
+            cursor: pointer;
+            inset: 0;
+            background-color: rgba(120, 120, 128, 0.36);
+            border-radius: 20px;
+            transition: background-color 0.25s ease;
+            border: 0.5px solid rgba(255, 255, 255, 0.1);
+        }
+        .macos-slider::before {
+            position: absolute;
+            content: "";
+            height: 18px;
+            width: 18px;
+            left: 1.5px;
+            bottom: 1.5px;
+            background-color: #ffffff;
+            border-radius: 50%;
+            transition: transform 0.25s cubic-bezier(0.2, 0.85, 0.3, 1);
+        }
+        input:checked + .macos-slider { background-color: #34c759; }
+        input:checked + .macos-slider::before { transform: translateX(16px); }
+
+        input[type="text"], input[type="password"], input[type="url"], select {
+            background: rgba(0, 0, 0, 0.3) !important;
+            border: 1px solid rgba(255, 255, 255, 0.12) !important;
+            border-radius: 7px !important;
+            color: #fff !important;
+            font-size: 12px !important;
+            outline: none !important;
+        }
+        input:focus, select:focus {
+            border-color: #007aff !important;
+            box-shadow: 0 0 0 3px rgba(0, 122, 255, 0.3) !important;
+        }
+
+        .macos-btn {
+            background: linear-gradient(180deg, rgba(255, 255, 255, 0.14) 0%, rgba(255, 255, 255, 0.05) 100%);
+            border: 0.5px solid rgba(255, 255, 255, 0.18);
+            border-radius: 6px;
+        }
+        .macos-btn-primary {
+            background: linear-gradient(180deg, #0a84ff 0%, #0071e3 100%);
+            border: 0.5px solid rgba(255, 255, 255, 0.25);
+            color: white;
+        }
+
+        .sheet-modal {
+            animation: slideDown 0.24s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+        @keyframes slideDown {
+            from { transform: translateY(-30px) scale(0.98); opacity: 0; }
+            to { transform: translateY(0) scale(1); opacity: 1; }
+        }
+    </style>
+</head>
+<body class="flex flex-col">
+    <div class="desktop-wallpaper"></div>
+
+    <!-- MENUBAR -->
+    <header class="macos-menubar h-[28px] w-full px-3 flex items-center justify-between text-xs z-50 text-white/90">
+        <div class="flex items-center gap-4">
+            <span class="text-sm font-semibold"><i class="fa-brands fa-apple"></i></span>
+            <span class="font-bold text-white">RYUX Studio</span>
+        </div>
+        <div class="flex items-center gap-3.5 text-xs text-white/80">
+            <span id="macos-clock" class="font-medium">Tue 9:41 AM</span>
+        </div>
+    </header>
+
+    <!-- WINDOW -->
+    <div class="flex-1 p-3 sm:p-5 flex items-center justify-center relative z-10 overflow-hidden">
+        <div class="macos-glass w-full h-full max-w-[1480px] rounded-xl flex flex-col overflow-hidden relative">
+            
+            <!-- TITLEBAR -->
+            <div class="h-12 bg-white/[0.04] border-b border-white/10 flex items-center justify-between px-4">
+                <div class="flex items-center gap-2 w-32">
+                    <span onclick="logout()" title="Sign Out" class="traffic-btn traffic-close"></span>
+                    <span title="Minimize" class="traffic-btn traffic-min"></span>
+                    <span onclick="toggleFullScreen()" title="Full Screen" class="traffic-btn traffic-max"></span>
+                </div>
+
+                <div class="flex items-center gap-2 text-xs font-medium text-white/80">
+                    <span class="font-semibold text-white">Presence Fleet</span>
+                </div>
+
+                <div class="flex items-center gap-2">
+                    <button onclick="openSyncAllModal()" class="macos-btn px-2.5 py-1 text-xs text-amber-300 font-medium">
+                        <i class="fa-solid fa-arrows-rotate text-[10px] mr-1"></i> Sync All
+                    </button>
+                    <button onclick="openModal('add-modal')" class="macos-btn-primary px-3 py-1 text-xs font-medium rounded-md">
+                        <i class="fa-solid fa-plus text-[10px] mr-1"></i> Add Account
+                    </button>
+                </div>
+            </div>
+
+            <!-- BODY -->
+            <div class="flex-1 flex min-h-0">
+                <aside class="w-52 bg-black/30 border-r border-white/10 flex flex-col">
+                    <div class="p-3 text-[11px] font-semibold text-white/40 uppercase tracking-wider">Navigation</div>
+                    <nav class="flex-1 px-2 space-y-1 text-xs font-medium">
+                        <button onclick="switchTab('dashboard')" id="nav-dashboard" class="w-full flex items-center gap-2.5 px-2.5 py-1.5 rounded-md bg-[#007aff] text-white">
+                            <i class="fa-solid fa-table-columns text-xs w-4"></i> Dashboard
+                        </button>
+                        <button onclick="switchTab('servers')" id="nav-servers" class="w-full flex items-center gap-2.5 px-2.5 py-1.5 rounded-md text-white/70 hover:bg-white/5">
+                            <i class="fa-solid fa-server text-xs w-4"></i> Guilds
+                        </button>
+                    </nav>
+                    <div class="p-3 border-t border-white/10 flex items-center justify-between text-xs">
+                        <span class="text-white/60 text-[11px]">System Online</span>
+                        <button onclick="logout()" class="text-white/40 hover:text-rose-400"><i class="fa-solid fa-power-off"></i></button>
+                    </div>
+                </aside>
+
+                <main class="flex-1 flex flex-col min-w-0 bg-black/20 overflow-y-auto">
+                    <!-- DASHBOARD -->
+                    <div id="view-dashboard" class="p-6 space-y-6">
+                        <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+                            <div class="bg-white/[0.04] border border-white/10 rounded-xl p-3.5 flex items-center gap-3">
+                                <div>
+                                    <div class="text-[10px] text-white/40 uppercase font-bold">Total Accounts</div>
+                                    <div id="stat-total" class="text-xl font-bold font-mono text-white mt-0.5">0</div>
+                                </div>
+                            </div>
+                            <div class="bg-white/[0.04] border border-white/10 rounded-xl p-3.5 flex items-center gap-3">
+                                <div>
+                                    <div class="text-[10px] text-white/40 uppercase font-bold">Connected</div>
+                                    <div id="stat-online" class="text-xl font-bold font-mono text-[#34c759] mt-0.5">0</div>
+                                </div>
+                            </div>
+                            <div class="bg-white/[0.04] border border-white/10 rounded-xl p-3.5 flex items-center gap-3">
+                                <div>
+                                    <div class="text-[10px] text-white/40 uppercase font-bold">Voice Active</div>
+                                    <div id="stat-vc" class="text-xl font-bold font-mono text-[#af52de] mt-0.5">0</div>
+                                </div>
+                            </div>
+                            <div class="bg-white/[0.04] border border-white/10 rounded-xl p-3.5 flex items-center gap-3">
+                                <div>
+                                    <div class="text-[10px] text-white/40 uppercase font-bold">Active RPC</div>
+                                    <div id="stat-rpc" class="text-xl font-bold font-mono text-sky-400 mt-0.5">0</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- BULK CONTROLS -->
+                        <div class="flex items-center justify-between bg-white/[0.03] border border-white/10 p-2.5 rounded-xl text-xs">
+                            <span class="text-white/50 text-[11px] font-medium px-2">Bulk Quick Status:</span>
+                            <div class="flex items-center gap-1.5">
+                                <button onclick="bulkStatus('online')" class="macos-btn px-2.5 py-1 text-[11px] text-emerald-400">Online</button>
+                                <button onclick="bulkStatus('idle')" class="macos-btn px-2.5 py-1 text-[11px] text-amber-400">Idle</button>
+                                <button onclick="bulkStatus('dnd')" class="macos-btn px-2.5 py-1 text-[11px] text-rose-400">DND</button>
+                                <div class="h-4 w-[1px] bg-white/15 mx-1"></div>
+                                <button onclick="bulkDisconnectVC()" class="macos-btn px-2.5 py-1 text-[11px] text-rose-300">Leave All Voice</button>
+                            </div>
+                        </div>
+
+                        <div id="accounts-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4"></div>
+                    </div>
+
+                    <!-- GUILDS VIEW -->
+                    <div id="view-servers" class="hidden p-6 space-y-4">
+                        <div class="flex items-center justify-between bg-white/[0.03] border border-white/10 p-3 rounded-xl">
+                            <div class="flex items-center gap-3">
+                                <label class="text-xs text-white/50">Target Account:</label>
+                                <select id="servers-account-picker" onchange="renderServers()" class="p-1.5 text-xs font-mono"></select>
+                            </div>
+                            <span id="servers-total-count" class="text-xs font-mono text-blue-400 bg-blue-500/10 px-2.5 py-1 rounded-md">0 Guilds</span>
+                        </div>
+                        <div id="servers-grid" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3"></div>
+                    </div>
+                </main>
+            </div>
+        </div>
+    </div>
+
+    <!-- LOGIN -->
+    <div id="login-screen" class="fixed inset-0 z-50 bg-black/60 backdrop-blur-2xl flex items-center justify-center p-4">
+        <div class="sheet-modal macos-glass w-full max-w-sm rounded-2xl p-6 text-center space-y-5">
+            <h3 class="text-base font-bold text-white">Studio Authentication</h3>
+            <form onsubmit="handleLogin(event)" class="space-y-2.5 text-left">
+                <input type="text" id="login-user" placeholder="Username" required class="w-full px-3 py-2">
+                <input type="password" id="login-pass" placeholder="Password" required class="w-full px-3 py-2">
+                <button type="submit" class="macos-btn-primary w-full py-2 text-xs font-semibold rounded-lg mt-2">Unlock Dashboard</button>
+            </form>
+            <p id="login-err" class="text-[11px] text-rose-400 font-medium h-4"></p>
+        </div>
+    </div>
+
+    <!-- ADD MODAL -->
+    <div id="add-modal" class="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm hidden flex items-center justify-center p-4">
+        <div class="sheet-modal macos-glass w-full max-w-md rounded-2xl p-5 space-y-4">
+            <div class="flex items-center justify-between border-b border-white/10 pb-2">
+                <h3 class="text-xs font-bold text-white uppercase tracking-wider">Add Discord Account</h3>
+                <button onclick="closeModal('add-modal')" class="text-white/40 hover:text-white text-xs">✕</button>
+            </div>
+            <div class="space-y-3">
+                <div>
+                    <label class="text-[11px] text-white/60 block mb-1">Account Label</label>
+                    <input type="text" id="new-tag" placeholder="e.g. Primary Alt" class="w-full p-2">
+                </div>
+                <div>
+                    <label class="text-[11px] text-white/60 block mb-1">Discord Token</label>
+                    <input type="password" id="new-token" placeholder="Token" class="w-full p-2 font-mono">
+                </div>
+            </div>
+            <div class="flex justify-end gap-2 pt-2 border-t border-white/10">
+                <button onclick="closeModal('add-modal')" class="macos-btn px-4 py-1.5 text-xs">Cancel</button>
+                <button onclick="addAccount()" class="macos-btn-primary px-4 py-1.5 text-xs font-semibold rounded-md">Save</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- CONFIG MODAL -->
+    <div id="config-modal" class="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm hidden flex items-center justify-center p-4">
+        <div class="sheet-modal macos-glass w-full max-w-2xl rounded-2xl p-5 space-y-4 max-h-[90vh] overflow-y-auto">
+            <div class="flex items-center justify-between border-b border-white/10 pb-3">
+                <h3 id="modal-config-title" class="text-xs font-bold uppercase tracking-wider text-white">Account Settings</h3>
+                <button onclick="closeModal('config-modal')" class="text-white/40 hover:text-white text-xs">✕</button>
+            </div>
+
+            <input type="hidden" id="cfg-target-id">
+            <input type="hidden" id="is-sync-all-mode" value="false">
+
+            <!-- PRESENCE -->
+            <div class="bg-black/30 border border-white/10 rounded-xl p-3.5 space-y-3">
+                <span class="text-[10px] font-bold uppercase tracking-wider text-blue-400">Badge & Status</span>
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="text-[11px] text-white/50 block mb-1">Status</label>
+                        <select id="cfg-status" class="w-full p-2">
+                            <option value="online">Online</option>
+                            <option value="idle">Idle</option>
+                            <option value="dnd">Do Not Disturb</option>
+                            <option value="invisible">Invisible</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="text-[11px] text-white/50 block mb-1">Badge Emulation</label>
+                        <select id="cfg-platform" class="w-full p-2">
+                            <option value="ios">📱 iOS Device</option>
+                            <option value="pc">💻 PC / macOS</option>
+                            <option value="android">🤖 Android</option>
+                            <option value="vr">🥽 VR Headset</option>
+                        </select>
+                    </div>
+                </div>
+                <div>
+                    <label class="text-[11px] text-white/50 block mb-1">Custom Status Text</label>
+                    <input type="text" id="cfg-custom-text" placeholder="Status description..." class="w-full p-2">
+                </div>
+            </div>
+
+            <!-- RPC -->
+            <div class="bg-black/30 border border-white/10 rounded-xl p-3.5 space-y-3">
+                <span class="text-[10px] font-bold uppercase tracking-wider text-sky-400">Rich Presence (RPC)</span>
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="text-[11px] text-white/50 block mb-1">App ID</label>
+                        <input type="text" id="cfg-rpc-appid" placeholder="Application ID" class="w-full p-2 font-mono">
+                    </div>
+                    <div>
+                        <label class="text-[11px] text-white/50 block mb-1">Activity Type</label>
+                        <select id="cfg-rpc-type" class="w-full p-2">
+                            <option value="playing">Playing</option>
+                            <option value="listening">Listening</option>
+                            <option value="watching">Watching</option>
+                            <option value="competing">Competing</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="text-[11px] text-white/50 block mb-1">Activity Name</label>
+                        <input type="text" id="cfg-rpc-name" placeholder="Visual Studio Code" class="w-full p-2">
+                    </div>
+                    <div>
+                        <label class="text-[11px] text-white/50 block mb-1">Details Line</label>
+                        <input type="text" id="cfg-rpc-details" placeholder="Coding..." class="w-full p-2">
+                    </div>
+                </div>
+                <div>
+                    <label class="text-[11px] text-white/50 block mb-1">State Line</label>
+                    <input type="text" id="cfg-rpc-state" placeholder="Workspace main" class="w-full p-2">
+                </div>
+                <div class="grid grid-cols-2 gap-3">
+                    <input type="text" id="cfg-rpc-large-img" placeholder="Large Image URL / Key" class="w-full p-2">
+                    <input type="text" id="cfg-rpc-small-img" placeholder="Small Image URL / Key" class="w-full p-2">
+                </div>
+            </div>
+
+            <!-- VOICE IDLE -->
+            <div class="bg-black/30 border border-white/10 rounded-xl p-3.5 space-y-3">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <span class="text-[10px] font-bold uppercase tracking-wider text-purple-400">24/7 Voice Channel Connection</span>
+                        <p class="text-[11px] text-white/40">Idles inside a voice channel continuously</p>
+                    </div>
+                    <label class="macos-switch">
+                        <input type="checkbox" id="cfg-vc-enable">
+                        <span class="macos-slider"></span>
+                    </label>
+                </div>
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="text-[11px] text-white/50 block mb-1">Guild (Server) ID</label>
+                        <input type="text" id="cfg-vc-guild" placeholder="Server ID" class="w-full p-2 font-mono">
+                    </div>
+                    <div>
+                        <label class="text-[11px] text-white/50 block mb-1">Voice Channel ID</label>
+                        <input type="text" id="cfg-vc-chan" placeholder="Channel ID" class="w-full p-2 font-mono">
+                    </div>
+                </div>
+                <div class="grid grid-cols-2 gap-2 pt-1">
+                    <div class="flex items-center justify-between p-2 rounded-lg bg-white/5">
+                        <span class="text-xs text-white/70">Mute</span>
+                        <label class="macos-switch"><input type="checkbox" id="cfg-vc-mute" checked><span class="macos-slider"></span></label>
+                    </div>
+                    <div class="flex items-center justify-between p-2 rounded-lg bg-white/5">
+                        <span class="text-xs text-white/70">Deafen</span>
+                        <label class="macos-switch"><input type="checkbox" id="cfg-vc-deaf" checked><span class="macos-slider"></span></label>
+                    </div>
+                </div>
+            </div>
+
+            <div class="flex justify-end gap-2 pt-2 border-t border-white/10">
+                <button onclick="closeModal('config-modal')" class="macos-btn px-4 py-1.5 text-xs text-white/80">Cancel</button>
+                <button onclick="saveConfig()" class="macos-btn-primary px-5 py-1.5 text-xs font-semibold rounded-md">Save Changes</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let accounts = [];
+
+        function updateClock() {
+            const now = new Date();
+            const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+            const hours = now.getHours() % 12 || 12;
+            const mins = String(now.getMinutes()).padStart(2, '0');
+            const ampm = now.getHours() >= 12 ? 'PM' : 'AM';
+            const el = document.getElementById('macos-clock');
+            if (el) el.innerText = `${days[now.getDay()]} ${hours}:${mins} ${ampm}`;
+        }
+        setInterval(updateClock, 1000);
+        updateClock();
+
+        function toggleFullScreen() {
+            if (!document.fullscreenElement) {
+                document.documentElement.requestFullscreen().catch(() => {});
+            } else if (document.exitFullscreen) {
+                document.exitFullscreen();
+            }
+        }
+
+        function openModal(id) { document.getElementById(id).classList.remove('hidden'); }
+        function closeModal(id) { document.getElementById(id).classList.add('hidden'); }
+
+        function switchTab(tab) {
+            document.getElementById('view-dashboard').classList.toggle('hidden', tab !== 'dashboard');
+            document.getElementById('view-servers').classList.toggle('hidden', tab !== 'servers');
+
+            const btnDash = document.getElementById('nav-dashboard');
+            const btnSrv = document.getElementById('nav-servers');
+            if (tab === 'dashboard') {
+                btnDash.className = "w-full flex items-center gap-2.5 px-2.5 py-1.5 rounded-md bg-[#007aff] text-white";
+                btnSrv.className = "w-full flex items-center gap-2.5 px-2.5 py-1.5 rounded-md text-white/70 hover:bg-white/5";
+            } else {
+                btnSrv.className = "w-full flex items-center gap-2.5 px-2.5 py-1.5 rounded-md bg-[#007aff] text-white";
+                btnDash.className = "w-full flex items-center gap-2.5 px-2.5 py-1.5 rounded-md text-white/70 hover:bg-white/5";
+            }
+        }
+
+        async function handleLogin(e) {
+            e.preventDefault();
+            const u = document.getElementById('login-user').value.trim();
+            const p = document.getElementById('login-pass').value.trim();
+            const errEl = document.getElementById('login-err');
+            errEl.innerText = '';
+
+            try {
+                const res = await fetch('/api/auth/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username: u, password: p })
+                });
+                const data = await res.json();
+                if (res.ok && data.token) {
+                    localStorage.setItem('studio_auth', 'true');
+                    document.getElementById('login-screen').classList.add('hidden');
+                    await fetchAccounts();
+                } else {
+                    errEl.innerText = data.detail || 'Invalid username or password';
+                }
+            } catch {
+                errEl.innerText = 'Unable to connect to server';
+            }
+        }
+
+        function logout() {
+            localStorage.removeItem('studio_auth');
+            document.getElementById('login-screen').classList.remove('hidden');
+        }
+
+        async function fetchAccounts() {
+            if (localStorage.getItem('studio_auth') !== 'true') return;
+            try {
+                const res = await fetch('/api/accounts', { cache: 'no-store' });
+                if (!res.ok) return;
+                accounts = await res.json();
+                renderUI();
+                renderServers();
+                updateServerDropdown();
+            } catch (err) {
+                console.error("Fetch error:", err);
+            }
+        }
+
+        function updateServerDropdown() {
+            const srvSelect = document.getElementById('servers-account-picker');
+            const prev = srvSelect.value;
+            srvSelect.innerHTML = '<option value="all">Combined (All Accounts)</option>';
+            accounts.forEach(a => {
+                srvSelect.innerHTML += `<option value="${a.id}">${a.tag}</option>`;
+            });
+            if (prev) srvSelect.value = prev;
+        }
+
+        function renderUI() {
+            document.getElementById('stat-total').innerText = accounts.length;
+            document.getElementById('stat-online').innerText = accounts.filter(a => a.online).length;
+            document.getElementById('stat-vc').innerText = accounts.filter(a => a.voiceConnected).length;
+            document.getElementById('stat-rpc').innerText = accounts.filter(a => a.rpc?.name).length;
+
+            const grid = document.getElementById('accounts-grid');
+            grid.innerHTML = '';
+
+            if (accounts.length === 0) {
+                grid.innerHTML = '<div class="col-span-full text-center text-white/40 py-20 text-xs font-mono">No accounts connected. Click "+ Add Account" to begin.</div>';
+                return;
+            }
+
+            accounts.forEach(acc => {
+                let vcDisplayHtml = `<div class="text-white/40 text-[11px]"><i class="fa-solid fa-microphone-slash mr-1"></i> Voice disconnected</div>`;
+                if (acc.voiceConnected) {
+                    vcDisplayHtml = `
+                        <div class="space-y-0.5">
+                            <div class="text-xs text-emerald-400 font-medium truncate">● ${acc.vc_channel_name || 'Voice Connected'}</div>
+                            <div class="text-[10px] text-white/40 truncate">${acc.vc_guild_name || 'Server'}</div>
+                        </div>`;
+                }
+
+                grid.innerHTML += `
+                    <div class="bg-black/35 border border-white/10 rounded-xl p-4 space-y-3">
+                        <div class="flex items-center gap-3">
+                            <img src="${acc.avatar}" class="w-10 h-10 rounded-full border border-white/10 object-cover">
+                            <div class="min-w-0 flex-1">
+                                <h4 class="text-xs font-bold text-white truncate">${acc.tag}</h4>
+                                <div class="text-[10px] text-white/40 uppercase mt-0.5">${acc.status} • ${acc.platform}</div>
+                            </div>
+                        </div>
+                        <div class="bg-white/[0.03] border border-white/5 rounded-lg p-2">${vcDisplayHtml}</div>
+                        <div class="text-[11px] text-white/50 space-y-0.5 bg-white/[0.03] p-2 rounded-lg">
+                            <div class="truncate">RPC: <span class="text-blue-400">${acc.rpc?.name || 'Disabled'}</span></div>
+                            <div class="truncate text-[10px] text-white/30 font-mono">ID: ${acc.tokenMask}</div>
+                        </div>
+                        <div class="flex items-center gap-2 pt-1">
+                            <button onclick="openConfigModal('${acc.id}')" class="macos-btn flex-1 py-1.5 text-xs text-white/90">Settings</button>
+                            <button onclick="deleteAccount('${acc.id}')" class="macos-btn px-2.5 py-1.5 text-xs text-rose-400 hover:text-rose-300"><i class="fa-solid fa-trash-can"></i></button>
+                        </div>
+                    </div>`;
+            });
+        }
+
+        function renderServers() {
+            const grid = document.getElementById('servers-grid');
+            grid.innerHTML = '';
+            const selectedId = document.getElementById('servers-account-picker').value;
+
+            let allGuilds = [];
+            if (selectedId === 'all') {
+                accounts.forEach(a => { if (a.guilds) allGuilds.push(...a.guilds); });
+            } else {
+                const acc = accounts.find(a => a.id === selectedId);
+                if (acc && acc.guilds) allGuilds = acc.guilds;
+            }
+
+            const unique = [];
+            const seen = new Set();
+            for (const g of allGuilds) {
+                if (!seen.has(g.id)) {
+                    seen.add(g.id);
+                    unique.push(g);
+                }
+            }
+
+            document.getElementById('servers-total-count').innerText = `${unique.length} Guilds`;
+
+            if (!unique.length) {
+                grid.innerHTML = '<div class="col-span-full text-center text-white/40 py-12 text-xs">No guilds found.</div>';
+                return;
+            }
+
+            unique.forEach(g => {
+                const iconHtml = g.icon ? `<img src="${g.icon}" class="w-10 h-10 rounded-xl object-cover mb-2 border border-white/10">` : `<div class="w-10 h-10 rounded-xl bg-white/10 text-white font-bold text-xs flex items-center justify-center mb-2">${g.name.substring(0,2).toUpperCase()}</div>`;
+                grid.innerHTML += `
+                    <div class="bg-black/30 border border-white/10 rounded-xl p-3 flex flex-col items-center text-center">
+                        ${iconHtml}
+                        <h4 class="text-xs font-semibold text-white truncate max-w-full">${g.name}</h4>
+                        <span class="text-[10px] text-white/40 mt-0.5">${g.member_count} members</span>
+                    </div>`;
+            });
+        }
+
+        async function addAccount() {
+            const token = document.getElementById('new-token').value.trim();
+            const tag = document.getElementById('new-tag').value.trim();
+            if (!token) return;
+            await fetch('/api/accounts/add', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ token, tag })
+            });
+            closeModal('add-modal');
+            document.getElementById('new-token').value = '';
+            document.getElementById('new-tag').value = '';
+            await fetchAccounts();
+        }
+
+        function openConfigModal(accId) {
+            const acc = accounts.find(a => a.id === accId);
+            if (!acc) return;
+            document.getElementById('is-sync-all-mode').value = "false";
+            document.getElementById('modal-config-title').innerText = `Settings • ${acc.tag}`;
+            document.getElementById('cfg-target-id').value = accId;
+
+            document.getElementById('cfg-status').value = acc.status || 'online';
+            document.getElementById('cfg-platform').value = acc.platform || 'pc';
+            document.getElementById('cfg-custom-text').value = acc.custom_status || '';
+
+            const rpc = acc.rpc || {};
+            document.getElementById('cfg-rpc-appid').value = rpc.application_id || '';
+            document.getElementById('cfg-rpc-type').value = rpc.type || 'playing';
+            document.getElementById('cfg-rpc-name').value = rpc.name || '';
+            document.getElementById('cfg-rpc-details').value = rpc.details || '';
+            document.getElementById('cfg-rpc-state').value = rpc.state || '';
+            document.getElementById('cfg-rpc-large-img').value = rpc.large_image || '';
+            document.getElementById('cfg-rpc-small-img').value = rpc.small_image || '';
+
+            const vc = acc.voice || {};
+            document.getElementById('cfg-vc-enable').checked = !!vc.enabled;
+            document.getElementById('cfg-vc-guild').value = vc.guild_id || '';
+            document.getElementById('cfg-vc-chan').value = vc.channel_id || '';
+            document.getElementById('cfg-vc-mute').checked = vc.self_mute !== false;
+            document.getElementById('cfg-vc-deaf').checked = vc.self_deaf !== false;
+
+            openModal('config-modal');
+        }
+
+        function openSyncAllModal() {
+            document.getElementById('is-sync-all-mode').value = "true";
+            document.getElementById('modal-config-title').innerText = "Sync All Accounts";
+            openModal('config-modal');
+        }
+
+        async function saveConfig() {
+            const isSyncAll = document.getElementById('is-sync-all-mode').value === "true";
+            const accId = document.getElementById('cfg-target-id').value;
+
+            const config = {
+                status: document.getElementById('cfg-status').value,
+                platform: document.getElementById('cfg-platform').value,
+                custom_status: document.getElementById('cfg-custom-text').value,
+                rpc: {
+                    application_id: document.getElementById('cfg-rpc-appid').value.trim(),
+                    type: document.getElementById('cfg-rpc-type').value,
+                    name: document.getElementById('cfg-rpc-name').value.trim(),
+                    details: document.getElementById('cfg-rpc-details').value.trim(),
+                    state: document.getElementById('cfg-rpc-state').value.trim(),
+                    large_image: document.getElementById('cfg-rpc-large-img').value.trim(),
+                    small_image: document.getElementById('cfg-rpc-small-img').value.trim()
+                },
+                voice: {
+                    enabled: document.getElementById('cfg-vc-enable').checked,
+                    guild_id: document.getElementById('cfg-vc-guild').value.trim(),
+                    channel_id: document.getElementById('cfg-vc-chan').value.trim(),
+                    self_mute: document.getElementById('cfg-vc-mute').checked,
+                    self_deaf: document.getElementById('cfg-vc-deaf').checked
+                }
+            };
+
+            closeModal('config-modal');
+
+            if (isSyncAll) {
+                await fetch('/api/accounts/sync-all', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ config })
+                });
+            } else {
+                await fetch('/api/accounts/update', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ id: accId, config })
+                });
+            }
+
+            await fetchAccounts();
+        }
+
+        async function deleteAccount(accId) {
+            if (!confirm('Remove this account?')) return;
+            await fetch('/api/accounts/delete', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ id: accId })
+            });
+            await fetchAccounts();
+        }
+
+        async function bulkStatus(status) {
+            await fetch('/api/bulk/status', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ status })
+            });
+            await fetchAccounts();
+        }
+
+        async function bulkDisconnectVC() {
+            await fetch('/api/bulk/disconnect-vc', { method: 'POST' });
+            await fetchAccounts();
+        }
+
+        function initApp() {
+            if (localStorage.getItem('studio_auth') === 'true') {
+                document.getElementById('login-screen').classList.add('hidden');
+                fetchAccounts();
+            }
+            setInterval(fetchAccounts, 4000);
+        }
+
+        window.addEventListener('DOMContentLoaded', initApp);
+    </script>
+</body>
+</html>
